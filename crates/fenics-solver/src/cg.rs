@@ -10,8 +10,7 @@ pub fn spmv(mat: &SparseColMat<usize, f64>, x: &[f64]) -> Vec<f64> {
     assert_eq!(x.len(), ncols, "Vector dimension mismatch in SpMV");
 
     let mut y = vec![0.0; nrows];
-    for col in 0..ncols {
-        let x_val = x[col];
+    for (col, &x_val) in x.iter().enumerate() {
         if x_val != 0.0 {
             let row_inds = mat.as_ref().row_indices_of_col(col);
             let values = mat.as_ref().values_of_col(col);
@@ -51,13 +50,13 @@ pub fn solve_cg(
 
     // Extract inverse diagonal for Jacobi preconditioner: M^{-1}
     let mut inv_diag = vec![1.0; n];
-    for col in 0..n {
+    for (col, diag_slot) in inv_diag.iter_mut().enumerate() {
         let row_inds = mat.as_ref().row_indices_of_col(col);
         let values = mat.as_ref().values_of_col(col);
         for (row_idx, &val) in row_inds.zip(values) {
             if row_idx.unbound() == col {
                 if val.abs() > 1e-15 {
-                    inv_diag[col] = 1.0 / val;
+                    *diag_slot = 1.0 / val;
                 }
                 break;
             }

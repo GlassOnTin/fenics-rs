@@ -506,8 +506,8 @@ mod tests {
                     sum_grad[d] += g[d];
                 }
             }
-            for d in 0..DIM {
-                assert_relative_eq!(sum_grad[d], 0.0, epsilon = 1e-12);
+            for s in &sum_grad {
+                assert_relative_eq!(*s, 0.0, epsilon = 1e-12);
             }
         }
     }

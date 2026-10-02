@@ -101,6 +101,7 @@ pub fn tangent_moduli_2d(mat: &NeoHookeanMaterial, f: &[[f64; 2]; 2]) -> [[[[f64
 }
 
 /// Solve 2D hyperelastic boundary value problem using Newton-Raphson.
+#[allow(clippy::needless_range_loop)]
 pub fn solve_hyperelastic_2d(
     mesh: &TriangleMesh,
     material: &NeoHookeanMaterial,

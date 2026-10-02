@@ -151,6 +151,7 @@ fn build_fixed_dofs(mesh: &TetrahedronMesh, geom_type: &str) -> Vec<(usize, f64)
 
 /// Solve 3D Linear Elasticity for any supported geometry in WebAssembly.
 #[wasm_bindgen]
+#[allow(clippy::too_many_arguments)]
 pub fn solve_geometry_elasticity(
     geom_type: &str,
     size: f64,

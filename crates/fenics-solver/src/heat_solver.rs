@@ -19,6 +19,7 @@ pub struct TransientHeatSolution {
 }
 
 /// Solve 2D transient heat equation on a triangle mesh.
+#[allow(clippy::too_many_arguments)]
 pub fn solve_transient_heat_2d<F>(
     mesh: &TriangleMesh,
     diffusivity: f64,

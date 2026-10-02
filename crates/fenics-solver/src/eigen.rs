@@ -93,17 +93,17 @@ pub fn solve_vibration_modes(
     for mode_idx in 0..num_modes {
         // Deterministic pseudo-random initial vector based on mode index
         let mut v = vec![0.0; n_free];
-        for i in 0..n_free {
+        for (i, val) in v.iter_mut().enumerate() {
             let s = ((i + 1) * 31 + (mode_idx + 1) * 97) % 1000;
-            v[i] = (s as f64) / 1000.0 - 0.5;
+            *val = (s as f64) / 1000.0 - 0.5;
         }
 
         // M-orthogonalize against existing modes
         for prev in &free_mode_vectors {
             let m_prev = spmv(&m_free, prev);
             let coeff = dot(&v, &m_prev);
-            for i in 0..n_free {
-                v[i] -= coeff * prev[i];
+            for (i, val) in v.iter_mut().enumerate() {
+                *val -= coeff * prev[i];
             }
         }
 
@@ -128,8 +128,8 @@ pub fn solve_vibration_modes(
             for prev in &free_mode_vectors {
                 let m_prev = spmv(&m_free, prev);
                 let coeff = dot(&w, &m_prev);
-                for i in 0..n_free {
-                    w[i] -= coeff * prev[i];
+                for (i, val) in w.iter_mut().enumerate() {
+                    *val -= coeff * prev[i];
                 }
             }
 
@@ -139,8 +139,8 @@ pub fn solve_vibration_modes(
             if mw_norm < 1e-15 {
                 break;
             }
-            for i in 0..n_free {
-                w[i] /= mw_norm;
+            for val in &mut w {
+                *val /= mw_norm;
             }
 
             // Rayleigh quotient: lambda = w^T K w

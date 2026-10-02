@@ -106,10 +106,8 @@ pub fn assemble_elasticity_mass_3d(
             let vol = (1.0 / 6.0) * map.det_jacobian.abs();
             let mut local_triplets = Vec::with_capacity(48);
 
-            for i in 0..4 {
-                let vi = cell[i];
-                for j in 0..4 {
-                    let vj = cell[j];
+            for (i, &vi) in cell.iter().enumerate() {
+                for (j, &vj) in cell.iter().enumerate() {
                     let factor = if i == j { 1.0 / 10.0 } else { 1.0 / 20.0 };
                     let m_val = density * vol * factor;
 
