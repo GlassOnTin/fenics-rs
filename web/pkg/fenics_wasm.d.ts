@@ -2,16 +2,19 @@
 /* eslint-disable */
 
 /**
- * Solve 3D Cantilever Beam Linear Elasticity in WebAssembly.
- *
- * Parameters:
- * - length, width, height: dimensions of beam (meters)
- * - nx, ny, nz: subdivisions along X, Y, Z
- * - youngs_modulus: Young's modulus E in Pascals (e.g. 1.0e6 to 2.0e11)
- * - poissons_ratio: Poisson's ratio nu (e.g. 0.3)
- * - load_x, load_y, load_z: body force vector (N/m^3)
+ * Export geometry as ASCII STL string directly from WebAssembly.
  */
-export function solve_cantilever_beam(length: number, width: number, height: number, nx: number, ny: number, nz: number, youngs_modulus: number, poissons_ratio: number, load_x: number, load_y: number, load_z: number): any;
+export function export_geometry_stl(geom_type: string, size: number, height_param: number): string;
+
+/**
+ * Solve 3D Linear Elasticity for any supported geometry in WebAssembly.
+ */
+export function solve_geometry_elasticity(geom_type: string, size: number, height_param: number, youngs_modulus: number, poissons_ratio: number, load_x: number, load_y: number, load_z: number): any;
+
+/**
+ * Compute natural vibration modes for any supported geometry in WebAssembly.
+ */
+export function solve_geometry_vibration(geom_type: string, size: number, height_param: number, youngs_modulus: number, poissons_ratio: number, density: number, num_modes: number): any;
 
 /**
  * Solve 2D Poisson Problem on Unit Square in WebAssembly.
@@ -22,11 +25,14 @@ export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembl
 
 export interface InitOutput {
     readonly memory: WebAssembly.Memory;
-    readonly solve_cantilever_beam: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number, i: number, j: number, k: number) => [number, number, number];
+    readonly export_geometry_stl: (a: number, b: number, c: number, d: number) => [number, number];
+    readonly solve_geometry_elasticity: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number, i: number) => [number, number, number];
+    readonly solve_geometry_vibration: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number) => [number, number, number];
     readonly solve_poisson_2d_wasm: (a: number, b: number) => [number, number, number];
     readonly __wbindgen_malloc: (a: number, b: number) => number;
     readonly __wbindgen_realloc: (a: number, b: number, c: number, d: number) => number;
     readonly __wbindgen_externrefs: WebAssembly.Table;
+    readonly __wbindgen_free: (a: number, b: number, c: number) => void;
     readonly __externref_table_dealloc: (a: number) => void;
     readonly __wbindgen_start: () => void;
 }

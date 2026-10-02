@@ -3,6 +3,8 @@ resolver = "2"
 members = [
     "crates/fenics-element",
     "crates/fenics-mesh",
+    "crates/fenics-geometry",
+    "crates/fenics-form",
     "crates/fenics-assembly",
     "crates/fenics-solver",
     "crates/fenics-wasm",

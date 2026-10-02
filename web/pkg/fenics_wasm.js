@@ -1,20 +1,32 @@
 /* @ts-self-types="./fenics_wasm.d.ts" */
 
 /**
- * Solve 3D Cantilever Beam Linear Elasticity in WebAssembly.
- *
- * Parameters:
- * - length, width, height: dimensions of beam (meters)
- * - nx, ny, nz: subdivisions along X, Y, Z
- * - youngs_modulus: Young's modulus E in Pascals (e.g. 1.0e6 to 2.0e11)
- * - poissons_ratio: Poisson's ratio nu (e.g. 0.3)
- * - load_x, load_y, load_z: body force vector (N/m^3)
- * @param {number} length
- * @param {number} width
- * @param {number} height
- * @param {number} nx
- * @param {number} ny
- * @param {number} nz
+ * Export geometry as ASCII STL string directly from WebAssembly.
+ * @param {string} geom_type
+ * @param {number} size
+ * @param {number} height_param
+ * @returns {string}
+ */
+export function export_geometry_stl(geom_type, size, height_param) {
+    let deferred2_0;
+    let deferred2_1;
+    try {
+        const ptr0 = passStringToWasm0(geom_type, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.export_geometry_stl(ptr0, len0, size, height_param);
+        deferred2_0 = ret[0];
+        deferred2_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
+    }
+}
+
+/**
+ * Solve 3D Linear Elasticity for any supported geometry in WebAssembly.
+ * @param {string} geom_type
+ * @param {number} size
+ * @param {number} height_param
  * @param {number} youngs_modulus
  * @param {number} poissons_ratio
  * @param {number} load_x
@@ -22,8 +34,31 @@
  * @param {number} load_z
  * @returns {any}
  */
-export function solve_cantilever_beam(length, width, height, nx, ny, nz, youngs_modulus, poissons_ratio, load_x, load_y, load_z) {
-    const ret = wasm.solve_cantilever_beam(length, width, height, nx, ny, nz, youngs_modulus, poissons_ratio, load_x, load_y, load_z);
+export function solve_geometry_elasticity(geom_type, size, height_param, youngs_modulus, poissons_ratio, load_x, load_y, load_z) {
+    const ptr0 = passStringToWasm0(geom_type, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const len0 = WASM_VECTOR_LEN;
+    const ret = wasm.solve_geometry_elasticity(ptr0, len0, size, height_param, youngs_modulus, poissons_ratio, load_x, load_y, load_z);
+    if (ret[2]) {
+        throw takeFromExternrefTable0(ret[1]);
+    }
+    return takeFromExternrefTable0(ret[0]);
+}
+
+/**
+ * Compute natural vibration modes for any supported geometry in WebAssembly.
+ * @param {string} geom_type
+ * @param {number} size
+ * @param {number} height_param
+ * @param {number} youngs_modulus
+ * @param {number} poissons_ratio
+ * @param {number} density
+ * @param {number} num_modes
+ * @returns {any}
+ */
+export function solve_geometry_vibration(geom_type, size, height_param, youngs_modulus, poissons_ratio, density, num_modes) {
+    const ptr0 = passStringToWasm0(geom_type, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const len0 = WASM_VECTOR_LEN;
+    const ret = wasm.solve_geometry_vibration(ptr0, len0, size, height_param, youngs_modulus, poissons_ratio, density, num_modes);
     if (ret[2]) {
         throw takeFromExternrefTable0(ret[1]);
     }

@@ -11,6 +11,7 @@ crate-type = ["cdylib", "rlib"]
 [dependencies]
 fenics-element = { path = "../fenics-element" }
 fenics-mesh = { path = "../fenics-mesh" }
+fenics-geometry = { path = "../fenics-geometry" }
 fenics-assembly = { path = "../fenics-assembly" }
 fenics-solver = { path = "../fenics-solver" }
 wasm-bindgen = { workspace = true }

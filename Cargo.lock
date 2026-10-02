@@ -252,6 +252,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "fenics-form"
+version = "0.1.0"
+dependencies = [
+ "approx",
+ "fenics-element",
+ "fenics-mesh",
+ "nalgebra",
+]
+
+[[package]]
+name = "fenics-geometry"
+version = "0.1.0"
+dependencies = [
+ "approx",
+ "fenics-element",
+ "fenics-mesh",
+ "nalgebra",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "fenics-mesh"
 version = "0.1.0"
 dependencies = [
@@ -281,6 +303,7 @@ version = "0.1.0"
 dependencies = [
  "fenics-assembly",
  "fenics-element",
+ "fenics-geometry",
  "fenics-mesh",
  "fenics-solver",
  "serde",

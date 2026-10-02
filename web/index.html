@@ -3,16 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>fenics-rs | WebAssembly 3D Finite Element Simulator</title>
+  <title>fenics-rs | WebAssembly 3D Finite Element & Metamaterial Simulator</title>
   <style>
     :root {
-      --bg: #0d1117;
-      --card-bg: rgba(22, 27, 34, 0.85);
+      --bg: #0a0e14;
+      --card-bg: rgba(22, 27, 34, 0.88);
       --border: #30363d;
       --text: #c9d1d9;
       --text-bright: #f0f6fc;
       --accent: #58a6ff;
       --accent-hover: #1f6feb;
+      --success: #3fb950;
+      --warning: #d29922;
       --danger: #f85149;
     }
 
@@ -40,14 +42,14 @@
       position: absolute;
       top: 16px;
       left: 16px;
-      width: 340px;
+      width: 360px;
       max-width: calc(100vw - 32px);
       background: var(--card-bg);
-      backdrop-filter: blur(12px);
+      backdrop-filter: blur(14px);
       border: 1px solid var(--border);
       border-radius: 12px;
       padding: 18px;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
       z-index: 10;
       max-height: calc(100vh - 32px);
       overflow-y: auto;
@@ -56,7 +58,7 @@
     h1 {
       font-size: 1.15rem;
       color: var(--text-bright);
-      margin-bottom: 4px;
+      margin-bottom: 2px;
       display: flex;
       align-items: center;
       gap: 8px;
@@ -75,21 +77,50 @@
     p.subtitle {
       font-size: 0.75rem;
       color: #8b949e;
+      margin-bottom: 12px;
+    }
+
+    /* Tab Buttons */
+    .tab-row {
+      display: flex;
+      gap: 6px;
       margin-bottom: 14px;
+      background: #161b22;
+      padding: 4px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+    }
+
+    .tab-btn {
+      flex: 1;
+      background: transparent;
+      color: #8b949e;
+      border: none;
+      padding: 6px 8px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .tab-btn.active {
+      background: var(--accent);
+      color: #ffffff;
     }
 
     .section-title {
-      font-size: 0.75rem;
+      font-size: 0.72rem;
       text-transform: uppercase;
       letter-spacing: 0.05em;
       color: #8b949e;
-      margin-top: 14px;
+      margin-top: 12px;
       margin-bottom: 8px;
       font-weight: 700;
     }
 
     .control-group {
-      margin-bottom: 10px;
+      margin-bottom: 9px;
     }
 
     .label-row {
@@ -102,6 +133,17 @@
     .label-row span.val {
       color: var(--accent);
       font-family: monospace;
+    }
+
+    select {
+      width: 100%;
+      background: #0d1117;
+      border: 1px solid var(--border);
+      color: var(--text-bright);
+      padding: 7px 10px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      outline: none;
     }
 
     input[type="range"] {
@@ -122,23 +164,34 @@
       cursor: pointer;
     }
 
+    .btn-row {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
     .btn {
-      width: 100%;
+      flex: 1;
       background: var(--accent);
       color: #ffffff;
       border: none;
-      padding: 10px;
+      padding: 9px;
       border-radius: 8px;
       font-weight: 600;
-      font-size: 0.85rem;
+      font-size: 0.8rem;
       cursor: pointer;
-      margin-top: 10px;
       transition: background 0.15s;
     }
 
-    .btn:hover {
-      background: var(--accent-hover);
+    .btn:hover { background: var(--accent-hover); }
+
+    .btn-secondary {
+      background: #21262d;
+      color: var(--text-bright);
+      border: 1px solid var(--border);
     }
+
+    .btn-secondary:hover { background: #30363d; }
 
     /* HUD Stats */
     .stats-card {
@@ -169,8 +222,8 @@
     }
 
     .legend-bar {
-      height: 10px;
-      border-radius: 5px;
+      height: 9px;
+      border-radius: 4px;
       background: linear-gradient(to right, #0000ff, #00ffff, #00ff00, #ffff00, #ff0000);
       margin-bottom: 4px;
     }
@@ -189,36 +242,79 @@
 
   <div class="panel">
     <h1>fenics-rs <span class="badge">WASM</span></h1>
-    <p class="subtitle">3D Navier-Cauchy Linear Elasticity in WebAssembly</p>
+    <p class="subtitle">3D Variational FEM & Polyhedral Metamaterial Engine</p>
 
-    <div class="section-title">Applied Load & Scale</div>
-    
-    <div class="control-group">
-      <div class="label-row">
-        <span>Downward Load (Fz)</span>
-        <span class="val" id="fz-val">-1000 N/m³</span>
-      </div>
-      <input type="range" id="fz-slider" min="-5000" max="0" step="100" value="-1000">
+    <!-- Tab selection: Static Stress vs Modal Vibration -->
+    <div class="tab-row">
+      <button class="tab-btn active" id="tab-static">Static Load</button>
+      <button class="tab-btn" id="tab-modal">Modal Vibration</button>
     </div>
 
+    <!-- Geometry Selection -->
     <div class="control-group">
       <div class="label-row">
-        <span>Lateral Load (Fy)</span>
-        <span class="val" id="fy-val">0 N/m³</span>
+        <span>Geometry Model</span>
       </div>
-      <input type="range" id="fy-slider" min="-2000" max="2000" step="100" value="0">
+      <select id="geom-select">
+        <option value="beam">Cantilever Beam (L=1.0m)</option>
+        <option value="icosahedron">Solid Regular Icosahedron</option>
+        <option value="stellated_icosahedron">Stellated Star Polyhedron</option>
+        <option value="dodecahedron">Solid Regular Dodecahedron</option>
+      </select>
     </div>
 
-    <div class="control-group">
+    <!-- Stellation Height Slider (only shown for stellated geometry) -->
+    <div class="control-group" id="stellation-group" style="display: none;">
       <div class="label-row">
-        <span>Displacement Scale</span>
-        <span class="val" id="scale-val">1.0x</span>
+        <span>Stellation Apex Height</span>
+        <span class="val" id="stellation-val">0.50x</span>
       </div>
-      <input type="range" id="scale-slider" min="0.1" max="5.0" step="0.1" value="1.0">
+      <input type="range" id="stellation-slider" min="0.1" max="1.2" step="0.05" value="0.5">
+    </div>
+
+    <!-- Static Controls -->
+    <div id="static-controls">
+      <div class="section-title">Applied Load & Displacement</div>
+      <div class="control-group">
+        <div class="label-row">
+          <span>Downward Load (Fz)</span>
+          <span class="val" id="fz-val">-1000 N/m³</span>
+        </div>
+        <input type="range" id="fz-slider" min="-5000" max="0" step="100" value="-1000">
+      </div>
+
+      <div class="control-group">
+        <div class="label-row">
+          <span>Displacement Scale</span>
+          <span class="val" id="scale-val">1.0x</span>
+        </div>
+        <input type="range" id="scale-slider" min="0.1" max="5.0" step="0.1" value="1.0">
+      </div>
+    </div>
+
+    <!-- Modal Vibration Controls -->
+    <div id="modal-controls" style="display: none;">
+      <div class="section-title">Vibration Mode & Harmonics</div>
+      <div class="control-group">
+        <div class="label-row">
+          <span>Vibration Mode</span>
+        </div>
+        <select id="mode-select">
+          <option value="0">Mode 1 (Fundamental Harmonic)</option>
+          <option value="1">Mode 2 (Orthogonal Bending)</option>
+          <option value="2">Mode 3 (Higher Harmonic)</option>
+        </select>
+      </div>
+      <div class="control-group">
+        <div class="label-row">
+          <span>Animation Amplitude</span>
+          <span class="val" id="amp-val">0.15</span>
+        </div>
+        <input type="range" id="amp-slider" min="0.02" max="0.5" step="0.02" value="0.15">
+      </div>
     </div>
 
     <div class="section-title">Material Properties</div>
-
     <div class="control-group">
       <div class="label-row">
         <span>Young's Modulus (E)</span>
@@ -235,32 +331,32 @@
       <input type="range" id="nu-slider" min="0.0" max="0.45" step="0.05" value="0.30">
     </div>
 
-    <button class="btn" id="solve-btn">Solve in WebAssembly</button>
+    <div class="btn-row">
+      <button class="btn" id="solve-btn">Solve (WASM)</button>
+      <button class="btn btn-secondary" id="export-stl-btn">Export STL</button>
+    </div>
 
+    <!-- Stats HUD -->
     <div class="stats-card">
       <div class="stat-row">
         <span>Solve Time (WASM):</span>
         <span class="num" id="stat-time">-- ms</span>
       </div>
       <div class="stat-row">
-        <span>PCG Iterations:</span>
-        <span class="num" id="stat-iters">--</span>
+        <span id="stat-metric-label">Peak Von Mises:</span>
+        <span class="num" id="stat-metric-val">-- Pa</span>
       </div>
       <div class="stat-row">
-        <span>Elements / Vertices:</span>
-        <span class="num" id="stat-mesh">1,080 / 336</span>
+        <span>Mesh Elements:</span>
+        <span class="num" id="stat-elements">--</span>
       </div>
       <div class="stat-row">
-        <span>Max Von Mises:</span>
-        <span class="num" id="stat-vm">-- Pa</span>
-      </div>
-      <div class="stat-row">
-        <span>Tip Deflection:</span>
-        <span class="num" id="stat-tip">-- mm</span>
+        <span>Domain Volume:</span>
+        <span class="num" id="stat-volume">-- m³</span>
       </div>
     </div>
 
-    <div class="legend">
+    <div class="legend" id="legend-box">
       <div class="legend-bar"></div>
       <div class="legend-labels">
         <span>0 Pa</span>
@@ -270,7 +366,6 @@
     </div>
   </div>
 
-  <!-- Import Three.js via ES Modules -->
   <script type="importmap">
     {
       "imports": {
@@ -283,15 +378,19 @@
   <script type="module">
     import * as THREE from 'three';
     import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-    import init, { solve_cantilever_beam } from './pkg/fenics_wasm.js';
+    import init, {
+      solve_geometry_elasticity,
+      solve_geometry_vibration,
+      export_geometry_stl
+    } from './pkg/fenics_wasm.js';
 
-    // 1. Initialize Three.js Scene
+    // 1. Three.js Scene Setup
     const container = document.getElementById('viewport');
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x0a0e14);
 
     const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.01, 100);
-    camera.position.set(1.6, 0.8, 1.4);
+    camera.position.set(1.5, 0.9, 1.4);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
@@ -300,46 +399,37 @@
 
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
-    controls.target.set(0.5, 0.05, 0.05);
+    controls.target.set(0.0, 0.0, 0.0);
 
-    // Lights
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
     scene.add(ambientLight);
-    const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
-    dirLight.position.set(2, 4, 3);
+    const dirLight = new THREE.DirectionalLight(0xffffff, 1.3);
+    dirLight.position.set(3, 5, 4);
     scene.add(dirLight);
 
-    // Coordinate Grid
-    const grid = new THREE.GridHelper(2, 20, 0x30363d, 0x1f242c);
-    grid.position.set(0.5, -0.05, 0.05);
+    const grid = new THREE.GridHelper(3, 30, 0x30363d, 0x1f242c);
+    grid.position.set(0, -0.6, 0);
     scene.add(grid);
 
-    // Fixed root indicator (clamped wall at x = 0)
-    const wallGeo = new THREE.BoxGeometry(0.01, 0.3, 0.3);
-    const wallMat = new THREE.MeshStandardMaterial({ color: 0x484f58, metalness: 0.5, roughness: 0.5 });
-    const wallMesh = new THREE.Mesh(wallGeo, wallMat);
-    wallMesh.position.set(-0.005, 0.05, 0.05);
-    scene.add(wallMesh);
-
     // State
-    let currentResult = null;
+    let activeTab = 'static'; // 'static' or 'modal'
+    let currentElasticityResult = null;
+    let currentModalResult = null;
     let meshObject = null;
     let wireframeObject = null;
+    let animationTime = 0;
 
-    // Turbo colormap approximation for Von Mises visualization
     function getTurboColor(t) {
       t = Math.max(0.0, Math.min(1.0, t));
-      // Standard Jet colormap
       let r = Math.max(0, Math.min(1, 1.5 - Math.abs(t * 4 - 3)));
       let g = Math.max(0, Math.min(1, 1.5 - Math.abs(t * 4 - 2)));
       let b = Math.max(0, Math.min(1, 1.5 - Math.abs(t * 4 - 1)));
       return [r, g, b];
     }
 
-    function updateVisualization(dispScale) {
-      if (!currentResult) return;
-
-      const { original_vertices, deformed_vertices, boundary_indices, vertex_von_mises, max_von_mises } = currentResult;
+    function renderStaticMesh(dispScale) {
+      if (!currentElasticityResult) return;
+      const { original_vertices, deformed_vertices, boundary_indices, vertex_von_mises, max_von_mises } = currentElasticityResult;
       const numVerts = original_vertices.length;
 
       const positions = new Float32Array(numVerts * 3);
@@ -376,7 +466,7 @@
 
       const material = new THREE.MeshStandardMaterial({
         vertexColors: true,
-        roughness: 0.3,
+        roughness: 0.35,
         metalness: 0.1,
         side: THREE.DoubleSide
       });
@@ -385,77 +475,193 @@
       scene.add(meshObject);
 
       const wireGeo = new THREE.WireframeGeometry(geometry);
-      wireframeObject = new THREE.LineSegments(wireGeo, new THREE.LineBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.15 }));
+      wireframeObject = new THREE.LineSegments(wireGeo, new THREE.LineBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.2 }));
       scene.add(wireframeObject);
     }
 
-    async function runSimulation() {
-      const fz = parseFloat(document.getElementById('fz-slider').value);
-      const fy = parseFloat(document.getElementById('fy-slider').value);
-      const e_val = parseFloat(document.getElementById('e-slider').value) * 1e6;
-      const nu = parseFloat(document.getElementById('nu-slider').value);
-      const scale = parseFloat(document.getElementById('scale-slider').value);
+    function updateModalAnimation(time) {
+      if (!currentModalResult || activeTab !== 'modal') return;
 
-      const t0 = performance.now();
-      try {
-        currentResult = solve_cantilever_beam(
-          1.0, 0.1, 0.1,  // Length, Width, Height
-          20, 3, 3,       // Nx, Ny, Nz (1,080 elements)
-          e_val, nu,
-          0.0, fy, fz
-        );
-        const t1 = performance.now();
+      const modeIdx = parseInt(document.getElementById('mode-select').value) || 0;
+      const amp = parseFloat(document.getElementById('amp-slider').value) || 0.15;
+      const freq = currentModalResult.natural_frequencies_hz[modeIdx] || 1.0;
 
-        // Update HUD Stats
-        document.getElementById('stat-time').textContent = `${(t1 - t0).toFixed(2)} ms`;
-        document.getElementById('stat-iters').textContent = currentResult.iterations;
-        document.getElementById('stat-vm').textContent = `${currentResult.max_von_mises.toFixed(1)} Pa`;
-        document.getElementById('legend-max').textContent = `${(currentResult.max_von_mises / 1000).toFixed(1)} kPa`;
+      const { original_vertices, mode_shapes, boundary_indices } = currentModalResult;
+      const modeVector = mode_shapes[modeIdx];
+      const numVerts = original_vertices.length;
 
-        // Calculate tip deflection
-        let maxTip = 0;
-        for (let i = 0; i < currentResult.original_vertices.length; i++) {
-          if (Math.abs(currentResult.original_vertices[i][0] - 1.0) < 1e-5) {
-            const dz = currentResult.deformed_vertices[i][2] - currentResult.original_vertices[i][2];
-            maxTip = Math.min(maxTip, dz);
-          }
-        }
-        document.getElementById('stat-tip').textContent = `${(maxTip * 1000).toFixed(1)} mm`;
+      const positions = new Float32Array(numVerts * 3);
+      const colors = new Float32Array(numVerts * 3);
 
-        updateVisualization(scale);
-      } catch (err) {
-        console.error("Simulation error:", err);
+      const osc = Math.sin(time * freq * 2.0 * Math.PI) * amp;
+
+      for (let i = 0; i < numVerts; i++) {
+        const ox = original_vertices[i][0];
+        const oy = original_vertices[i][1];
+        const oz = original_vertices[i][2];
+
+        const ux = modeVector[3 * i];
+        const uy = modeVector[3 * i + 1];
+        const uz = modeVector[3 * i + 2];
+
+        positions[3 * i] = ox + ux * osc;
+        positions[3 * i + 1] = oy + uy * osc;
+        positions[3 * i + 2] = oz + uz * osc;
+
+        const dispMag = Math.sqrt(ux * ux + uy * uy + uz * uz);
+        const [cr, cg, cb] = getTurboColor(Math.min(1.0, dispMag * 1.5));
+        colors[3 * i] = cr;
+        colors[3 * i + 1] = cg;
+        colors[3 * i + 2] = cb;
+      }
+
+      if (!meshObject) {
+        const geometry = new THREE.BufferGeometry();
+        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+        geometry.setIndex(boundary_indices);
+        geometry.computeVertexNormals();
+
+        const material = new THREE.MeshStandardMaterial({
+          vertexColors: true,
+          roughness: 0.35,
+          metalness: 0.1,
+          side: THREE.DoubleSide
+        });
+
+        meshObject = new THREE.Mesh(geometry, material);
+        scene.add(meshObject);
+      } else {
+        meshObject.geometry.attributes.position.array.set(positions);
+        meshObject.geometry.attributes.position.needsUpdate = true;
+        meshObject.geometry.attributes.color.array.set(colors);
+        meshObject.geometry.attributes.color.needsUpdate = true;
+        meshObject.geometry.computeVertexNormals();
       }
     }
 
-    // UI Event Listeners
+    async function runCalculation() {
+      const geomType = document.getElementById('geom-select').value;
+      const stellationH = parseFloat(document.getElementById('stellation-slider').value);
+      const e_val = parseFloat(document.getElementById('e-slider').value) * 1e6;
+      const nu = parseFloat(document.getElementById('nu-slider').value);
+      const fz = parseFloat(document.getElementById('fz-slider').value);
+      const scale = parseFloat(document.getElementById('scale-slider').value);
+
+      const t0 = performance.now();
+
+      if (activeTab === 'static') {
+        currentElasticityResult = solve_geometry_elasticity(
+          geomType, 0.8, stellationH, e_val, nu, 0.0, 0.0, fz
+        );
+        const t1 = performance.now();
+
+        document.getElementById('stat-time').textContent = `${(t1 - t0).toFixed(2)} ms`;
+        document.getElementById('stat-metric-label').textContent = 'Peak Von Mises:';
+        document.getElementById('stat-metric-val').textContent = `${currentElasticityResult.max_von_mises.toFixed(1)} Pa`;
+        document.getElementById('stat-elements').textContent = `${currentElasticityResult.num_elements} tets`;
+        document.getElementById('stat-volume').textContent = `${currentElasticityResult.total_volume.toFixed(4)} m³`;
+        document.getElementById('legend-max').textContent = `${(currentElasticityResult.max_von_mises / 1000).toFixed(1)} kPa`;
+
+        renderStaticMesh(scale);
+      } else {
+        currentModalResult = solve_geometry_vibration(
+          geomType, 0.8, stellationH, e_val, nu, 1000.0, 3
+        );
+        const t1 = performance.now();
+
+        if (meshObject) { scene.remove(meshObject); meshObject = null; }
+        if (wireframeObject) { scene.remove(wireframeObject); wireframeObject = null; }
+
+        const modeIdx = parseInt(document.getElementById('mode-select').value) || 0;
+        const f = currentModalResult.natural_frequencies_hz[modeIdx];
+
+        document.getElementById('stat-time').textContent = `${(t1 - t0).toFixed(2)} ms`;
+        document.getElementById('stat-metric-label').textContent = 'Natural Frequency:';
+        document.getElementById('stat-metric-val').textContent = `${f.toFixed(2)} Hz`;
+        document.getElementById('stat-elements').textContent = `${currentModalResult.original_vertices.length} nodes`;
+        document.getElementById('stat-volume').textContent = `Mode ${modeIdx + 1} Harmonic`;
+      }
+    }
+
+    // UI Listeners
+    document.getElementById('geom-select').addEventListener('change', (e) => {
+      const isStellated = e.target.value === 'stellated_icosahedron';
+      document.getElementById('stellation-group').style.display = isStellated ? 'block' : 'none';
+      runCalculation();
+    });
+
+    document.getElementById('stellation-slider').addEventListener('input', (e) => {
+      document.getElementById('stellation-val').textContent = `${parseFloat(e.target.value).toFixed(2)}x`;
+      runCalculation();
+    });
+
     document.getElementById('fz-slider').addEventListener('input', (e) => {
       document.getElementById('fz-val').textContent = `${e.target.value} N/m³`;
-      runSimulation();
-    });
-
-    document.getElementById('fy-slider').addEventListener('input', (e) => {
-      document.getElementById('fy-val').textContent = `${e.target.value} N/m³`;
-      runSimulation();
-    });
-
-    document.getElementById('e-slider').addEventListener('input', (e) => {
-      document.getElementById('e-val').textContent = `${parseFloat(e.target.value).toFixed(1)} MPa`;
-      runSimulation();
-    });
-
-    document.getElementById('nu-slider').addEventListener('input', (e) => {
-      document.getElementById('nu-val').textContent = parseFloat(e.target.value).toFixed(2);
-      runSimulation();
+      if (activeTab === 'static') runCalculation();
     });
 
     document.getElementById('scale-slider').addEventListener('input', (e) => {
       const val = parseFloat(e.target.value);
       document.getElementById('scale-val').textContent = `${val.toFixed(1)}x`;
-      updateVisualization(val);
+      if (activeTab === 'static') renderStaticMesh(val);
     });
 
-    document.getElementById('solve-btn').addEventListener('click', runSimulation);
+    document.getElementById('e-slider').addEventListener('input', (e) => {
+      document.getElementById('e-val').textContent = `${parseFloat(e.target.value).toFixed(1)} MPa`;
+      runCalculation();
+    });
+
+    document.getElementById('nu-slider').addEventListener('input', (e) => {
+      document.getElementById('nu-val').textContent = parseFloat(e.target.value).toFixed(2);
+      runCalculation();
+    });
+
+    document.getElementById('tab-static').addEventListener('click', () => {
+      activeTab = 'static';
+      document.getElementById('tab-static').classList.add('active');
+      document.getElementById('tab-modal').classList.remove('active');
+      document.getElementById('static-controls').style.display = 'block';
+      document.getElementById('modal-controls').style.display = 'none';
+      document.getElementById('legend-box').style.display = 'block';
+      runCalculation();
+    });
+
+    document.getElementById('tab-modal').addEventListener('click', () => {
+      activeTab = 'modal';
+      document.getElementById('tab-modal').classList.add('active');
+      document.getElementById('tab-static').classList.remove('active');
+      document.getElementById('static-controls').style.display = 'none';
+      document.getElementById('modal-controls').style.display = 'block';
+      document.getElementById('legend-box').style.display = 'none';
+      runCalculation();
+    });
+
+    document.getElementById('mode-select').addEventListener('change', () => {
+      if (currentModalResult) {
+        const modeIdx = parseInt(document.getElementById('mode-select').value) || 0;
+        const f = currentModalResult.natural_frequencies_hz[modeIdx];
+        document.getElementById('stat-metric-val').textContent = `${f.toFixed(2)} Hz`;
+        document.getElementById('stat-volume').textContent = `Mode ${modeIdx + 1} Harmonic`;
+      }
+    });
+
+    document.getElementById('solve-btn').addEventListener('click', runCalculation);
+
+    // Export STL download
+    document.getElementById('export-stl-btn').addEventListener('click', () => {
+      const geomType = document.getElementById('geom-select').value;
+      const stellationH = parseFloat(document.getElementById('stellation-slider').value);
+      const stlData = export_geometry_stl(geomType, 0.8, stellationH);
+
+      const blob = new Blob([stlData], { type: 'model/stl' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `fenics-rs-${geomType}.stl`;
+      a.click();
+      URL.revokeObjectURL(url);
+    });
 
     window.addEventListener('resize', () => {
       camera.aspect = window.innerWidth / window.innerHeight;
@@ -463,17 +669,21 @@
       renderer.setSize(window.innerWidth, window.innerHeight);
     });
 
-    // Render loop
-    function animate() {
+    function animate(timestamp) {
       requestAnimationFrame(animate);
       controls.update();
+
+      if (activeTab === 'modal') {
+        updateModalAnimation(timestamp * 0.001);
+      }
+
       renderer.render(scene, camera);
     }
-    animate();
+    requestAnimationFrame(animate);
 
-    // Initialize WASM and kick off initial solve
+    // Initialize WASM
     await init();
-    runSimulation();
+    runCalculation();
   </script>
 </body>
 </html>
