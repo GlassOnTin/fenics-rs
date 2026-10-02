@@ -226,8 +226,16 @@ mod tests {
     #[test]
     fn test_simplex_volumes() {
         for deg in 1..=3 {
-            assert_relative_eq!(interval_quadrature(deg).total_weight(), 1.0, epsilon = 1e-12);
-            assert_relative_eq!(triangle_quadrature(deg).total_weight(), 0.5, epsilon = 1e-12);
+            assert_relative_eq!(
+                interval_quadrature(deg).total_weight(),
+                1.0,
+                epsilon = 1e-12
+            );
+            assert_relative_eq!(
+                triangle_quadrature(deg).total_weight(),
+                0.5,
+                epsilon = 1e-12
+            );
             assert_relative_eq!(
                 tetrahedron_quadrature(deg).total_weight(),
                 1.0 / 6.0,

@@ -41,7 +41,10 @@ fn test_axial_bar_extension() {
     let avg_tip = tip_x_disp.iter().sum::<f64>() / tip_x_disp.len() as f64;
     let exact_tip = 0.00050;
 
-    println!("Axial Bar Tip Extension: {:.6} m (Analytical: {:.6} m)", avg_tip, exact_tip);
+    println!(
+        "Axial Bar Tip Extension: {:.6} m (Analytical: {:.6} m)",
+        avg_tip, exact_tip
+    );
     assert!((avg_tip - exact_tip).abs() / exact_tip < 0.03); // within 3% on coarse 10x2x2 mesh
 }
 
@@ -79,7 +82,8 @@ fn test_cantilever_beam_bending() {
         }
     }
 
-    let avg_tip_deflection: f64 = tip_deflections.iter().sum::<f64>() / tip_deflections.len() as f64;
+    let avg_tip_deflection: f64 =
+        tip_deflections.iter().sum::<f64>() / tip_deflections.len() as f64;
 
     // DOLFINx 0.10 reference solution on identical 20x3x3 mesh: -0.0890 m
     // fenics-rs solution: -0.0930 m (matching DOLFINx P1 within 5%)
@@ -91,12 +95,21 @@ fn test_cantilever_beam_bending() {
     println!("Total DOFs: {}", 3 * mesh.num_vertices());
     println!("Total Elements: {}", mesh.num_cells());
     println!("Solver Iterations: {}", sol.iterations);
-    println!("Computed Tip Deflection (fenics-rs): {:.5} m", avg_tip_deflection);
+    println!(
+        "Computed Tip Deflection (fenics-rs): {:.5} m",
+        avg_tip_deflection
+    );
     println!("DOLFINx 0.10.0 Reference Solution:    {:.5} m", dolfinx_ref);
-    println!("Max Von Mises Stress:                {:.2} Pa", sol.max_von_mises);
+    println!(
+        "Max Von Mises Stress:                {:.2} Pa",
+        sol.max_von_mises
+    );
 
     let rel_diff_dolfinx = (avg_tip_deflection - dolfinx_ref).abs() / dolfinx_ref.abs();
-    println!("Relative difference from DOLFINx 0.10: {:.2}%", rel_diff_dolfinx * 100.0);
+    println!(
+        "Relative difference from DOLFINx 0.10: {:.2}%",
+        rel_diff_dolfinx * 100.0
+    );
 
     // Verify agreement with DOLFINx within 5%
     assert!(

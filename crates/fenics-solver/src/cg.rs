@@ -72,7 +72,11 @@ pub fn solve_cg(
 
     // r = b - A * x
     let ax = spmv(mat, &x);
-    let mut r: Vec<f64> = b.iter().zip(ax.iter()).map(|(&bi, &axi)| bi - axi).collect();
+    let mut r: Vec<f64> = b
+        .iter()
+        .zip(ax.iter())
+        .map(|(&bi, &axi)| bi - axi)
+        .collect();
 
     let b_norm = norm2(b);
     let initial_res = norm2(&r);
@@ -81,7 +85,11 @@ pub fn solve_cg(
     }
 
     // z = M^{-1} * r
-    let mut z: Vec<f64> = r.iter().zip(inv_diag.iter()).map(|(&ri, &mi)| ri * mi).collect();
+    let mut z: Vec<f64> = r
+        .iter()
+        .zip(inv_diag.iter())
+        .map(|(&ri, &mi)| ri * mi)
+        .collect();
 
     // p = z
     let mut p = z.clone();
@@ -93,7 +101,10 @@ pub fn solve_cg(
         let p_ap = dot(&p, &ap);
 
         if p_ap.abs() < 1e-30 {
-            return Err(format!("Breakdown in CG: curvature p^T A p is near zero at iteration {}", iter));
+            return Err(format!(
+                "Breakdown in CG: curvature p^T A p is near zero at iteration {}",
+                iter
+            ));
         }
 
         let alpha = rz_old / p_ap;
@@ -130,7 +141,11 @@ pub fn solve_cg(
     Err(format!(
         "CG failed to converge within {} iterations (final relative residual: {:.2e})",
         max_iter,
-        if b_norm > 0.0 { final_res / b_norm } else { final_res }
+        if b_norm > 0.0 {
+            final_res / b_norm
+        } else {
+            final_res
+        }
     ))
 }
 
@@ -143,12 +158,7 @@ mod tests {
     fn test_small_spd_system() {
         // [ 4  -1 ] [ x0 ] = [ 3 ]  => x0 = 1, x1 = 1
         // [-1   4 ] [ x1 ]   [ 3 ]
-        let triplets = vec![
-            (0, 0, 4.0),
-            (0, 1, -1.0),
-            (1, 0, -1.0),
-            (1, 1, 4.0),
-        ];
+        let triplets = vec![(0, 0, 4.0), (0, 1, -1.0), (1, 0, -1.0), (1, 1, 4.0)];
         let mat = SparseColMat::try_new_from_triplets(2, 2, &triplets).unwrap();
         let b = vec![3.0, 3.0];
 

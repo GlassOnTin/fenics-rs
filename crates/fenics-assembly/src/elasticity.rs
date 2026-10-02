@@ -150,10 +150,7 @@ pub fn assemble_elasticity_stiffness_3d(
 
 /// Assemble the 3D body force load vector (e.g. gravity or body acceleration).
 /// f_body is [f_x, f_y, f_z] in N/m^3.
-pub fn assemble_elasticity_body_force_3d(
-    mesh: &TetrahedronMesh,
-    f_body: [f64; 3],
-) -> Vec<f64> {
+pub fn assemble_elasticity_body_force_3d(mesh: &TetrahedronMesh, f_body: [f64; 3]) -> Vec<f64> {
     let n_dofs = 3 * mesh.num_vertices();
     let mut rhs = vec![0.0; n_dofs];
 

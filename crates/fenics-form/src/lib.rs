@@ -3,8 +3,13 @@
 pub mod form;
 #[macro_use]
 pub mod macros;
+pub mod ufl;
 
 pub use form::{BilinearForm, FormKernel};
+pub use ufl::{
+    coefficient, constant, derivative, div, grad, inner, test_function, trial_function, Expr, Form,
+    Measure,
+};
 
 #[cfg(test)]
 mod tests {

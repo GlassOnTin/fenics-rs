@@ -57,17 +57,16 @@ pub fn export_stl_ascii(
 }
 
 /// Export surface triangles as compact Binary STL byte buffer.
-pub fn export_stl_binary(
-    vertices: &[[f64; 3]],
-    triangles: &[[usize; 3]],
-) -> Vec<u8> {
+pub fn export_stl_binary(vertices: &[[f64; 3]], triangles: &[[usize; 3]]) -> Vec<u8> {
     // 80-byte header + 4-byte triangle count + 50 bytes per triangle
     let total_bytes = 84 + triangles.len() * 50;
     let mut buf = Vec::with_capacity(total_bytes);
 
     // 80-byte header
-    let header = b"fenics-rs binary STL generated mesh export                                     ";
-    buf.extend_from_slice(&header[..80]);
+    let mut header = [0u8; 80];
+    let title = b"fenics-rs binary STL generated mesh export";
+    header[..title.len()].copy_from_slice(title);
+    buf.extend_from_slice(&header);
 
     // Number of triangles (u32 little-endian)
     buf.extend_from_slice(&(triangles.len() as u32).to_le_bytes());

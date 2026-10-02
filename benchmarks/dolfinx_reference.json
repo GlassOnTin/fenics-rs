@@ -1,0 +1,14 @@
+{
+  "dolfinx_version": "0.10.0.post5",
+  "poisson_2d": {
+    "l2_error": 0.0053774350099473865,
+    "max_value": 0.9967934255722398,
+    "elapsed_ms": 11.319668992655352,
+    "num_dofs": 289
+  },
+  "elasticity_3d": {
+    "tip_uy": -0.005338663138855785,
+    "elapsed_ms": 437.78107399703003,
+    "num_dofs": 297
+  }
+}

@@ -84,9 +84,8 @@ where
             let exact_val = u_exact(x_phys);
 
             let basis_vals = elem.evaluate_basis(&q.point);
-            let approx_val = u_cell[0] * basis_vals[0]
-                + u_cell[1] * basis_vals[1]
-                + u_cell[2] * basis_vals[2];
+            let approx_val =
+                u_cell[0] * basis_vals[0] + u_cell[1] * basis_vals[1] + u_cell[2] * basis_vals[2];
 
             let err = approx_val - exact_val;
             total_sq_error += q.weight * det_j * err * err;
@@ -152,12 +151,7 @@ where
         let map = AffineSimplexMap::from_tetrahedron_vertices(&verts).unwrap();
         let det_j = map.det_jacobian.abs();
 
-        let u_cell = [
-            u_h[cell[0]],
-            u_h[cell[1]],
-            u_h[cell[2]],
-            u_h[cell[3]],
-        ];
+        let u_cell = [u_h[cell[0]], u_h[cell[1]], u_h[cell[2]], u_h[cell[3]]];
 
         for q in &quad.points {
             let x_phys = map.map_to_physical(&verts[0], &q.point);

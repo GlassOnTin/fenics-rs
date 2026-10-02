@@ -186,8 +186,7 @@ pub fn star_tetrahedralize(
 
         // Ensure positive orientation (det(J) > 0)
         // Vector from center to v0, v1, v2
-        let det = v0[0] * (v1[1] * v2[2] - v1[2] * v2[1])
-            - v0[1] * (v1[0] * v2[2] - v1[2] * v2[0])
+        let det = v0[0] * (v1[1] * v2[2] - v1[2] * v2[1]) - v0[1] * (v1[0] * v2[2] - v1[2] * v2[0])
             + v0[2] * (v1[0] * v2[1] - v1[1] * v2[0]);
 
         if det > 0.0 {

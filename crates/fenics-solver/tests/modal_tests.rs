@@ -57,11 +57,26 @@ fn test_cantilever_natural_frequencies() {
     let f1 = modes[0].frequency_hz;
     let f2 = modes[1].frequency_hz;
     let f3 = modes[2].frequency_hz;
-    println!("Fundamental frequencies: Mode 1 = {:.3} Hz, Mode 2 = {:.3} Hz, Mode 3 = {:.3} Hz", f1, f2, f3);
+    println!(
+        "Fundamental frequencies: Mode 1 = {:.3} Hz, Mode 2 = {:.3} Hz, Mode 3 = {:.3} Hz",
+        f1, f2, f3
+    );
 
     // Fundamental bending frequencies should be in the 1.5 - 3.0 Hz range
-    assert!(f1 > 1.0 && f1 < 3.0, "Expected fundamental frequency around 1.6-2.2 Hz, got {}", f1);
-    assert!(f2 > 1.5 && f2 < 3.5, "Expected second mode around 2.0-2.8 Hz, got {}", f2);
+    assert!(
+        f1 > 1.0 && f1 < 3.0,
+        "Expected fundamental frequency around 1.6-2.2 Hz, got {}",
+        f1
+    );
+    assert!(
+        f2 > 1.5 && f2 < 3.5,
+        "Expected second mode around 2.0-2.8 Hz, got {}",
+        f2
+    );
     // Mode 3 is a higher-order bending harmonic (approx 5-6x higher)
-    assert!(f3 > 8.0 && f3 < 20.0, "Expected higher harmonic mode around 10-15 Hz, got {}", f3);
+    assert!(
+        f3 > 8.0 && f3 < 20.0,
+        "Expected higher harmonic mode around 10-15 Hz, got {}",
+        f3
+    );
 }

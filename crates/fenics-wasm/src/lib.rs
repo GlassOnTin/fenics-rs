@@ -82,8 +82,12 @@ fn build_fixed_dofs(mesh: &TetrahedronMesh, geom_type: &str) -> Vec<(usize, f64)
             let mut min_z = f64::INFINITY;
             let mut max_z = f64::NEG_INFINITY;
             for v in &mesh.vertices {
-                if v[2] < min_z { min_z = v[2]; }
-                if v[2] > max_z { max_z = v[2]; }
+                if v[2] < min_z {
+                    min_z = v[2];
+                }
+                if v[2] > max_z {
+                    max_z = v[2];
+                }
             }
             let threshold = min_z + 0.25 * (max_z - min_z);
             for (i, v) in mesh.vertices.iter().enumerate() {
@@ -95,8 +99,14 @@ fn build_fixed_dofs(mesh: &TetrahedronMesh, geom_type: &str) -> Vec<(usize, f64)
             }
             // Ensure at least 4 vertices are fixed to eliminate rigid body rotations
             if fixed.len() < 12 {
-                let mut indexed_z: Vec<(usize, f64)> = mesh.vertices.iter().enumerate().map(|(i, v)| (i, v[2])).collect();
-                indexed_z.sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap_or(std::cmp::Ordering::Equal));
+                let mut indexed_z: Vec<(usize, f64)> = mesh
+                    .vertices
+                    .iter()
+                    .enumerate()
+                    .map(|(i, v)| (i, v[2]))
+                    .collect();
+                indexed_z
+                    .sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap_or(std::cmp::Ordering::Equal));
                 fixed.clear();
                 for &(idx, _) in indexed_z.iter().take(4) {
                     fixed.push((3 * idx, 0.0));
@@ -231,8 +241,8 @@ pub fn solve_poisson_2d_wasm(nx: usize, ny: usize) -> Result<JsValue, JsValue> {
     let source = |x: [f64; 2]| 2.0 * PI * PI * (PI * x[0]).sin() * (PI * x[1]).sin();
     let bnd_val = |x: [f64; 2]| u_exact(x);
 
-    let sol = solve_poisson_2d(&mesh, source, bnd_val, 1e-10, 1000)
-        .map_err(|e| JsValue::from_str(&e))?;
+    let sol =
+        solve_poisson_2d(&mesh, source, bnd_val, 1e-10, 1000).map_err(|e| JsValue::from_str(&e))?;
 
     let l2_error = compute_l2_error_2d(&mesh, &sol.u, u_exact);
 

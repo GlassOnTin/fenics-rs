@@ -81,9 +81,8 @@ pub fn box_beam(
         }
     }
 
-    let v_idx = |i: usize, j: usize, k: usize| -> usize {
-        k * (nx + 1) * (ny + 1) + j * (nx + 1) + i
-    };
+    let v_idx =
+        |i: usize, j: usize, k: usize| -> usize { k * (nx + 1) * (ny + 1) + j * (nx + 1) + i };
 
     let mut cells = Vec::with_capacity(6 * nx * ny * nz);
     for k in 0..nz {
