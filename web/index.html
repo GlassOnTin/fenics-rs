@@ -244,10 +244,12 @@
     <h1>fenics-rs <span class="badge">WASM</span></h1>
     <p class="subtitle">3D Variational FEM & Polyhedral Metamaterial Engine</p>
 
-    <!-- Tab selection: Static Stress vs Modal Vibration -->
+    <!-- Tab selection: Static Stress vs Modal Vibration vs Stokes vs Heat -->
     <div class="tab-row">
-      <button class="tab-btn active" id="tab-static">Static Load</button>
-      <button class="tab-btn" id="tab-modal">Modal Vibration</button>
+      <button class="tab-btn active" id="tab-static">Static</button>
+      <button class="tab-btn" id="tab-modal">Modal</button>
+      <button class="tab-btn" id="tab-stokes">Stokes</button>
+      <button class="tab-btn" id="tab-heat">Heat</button>
     </div>
 
     <!-- Geometry Selection -->
@@ -381,7 +383,9 @@
     import init, {
       solve_geometry_elasticity,
       solve_geometry_vibration,
-      export_geometry_stl
+      export_geometry_stl,
+      solve_stokes_2d_wasm,
+      solve_transient_heat_2d_wasm
     } from './pkg/fenics_wasm.js';
 
     // 1. Three.js Scene Setup
@@ -564,7 +568,7 @@
         document.getElementById('legend-max').textContent = `${(currentElasticityResult.max_von_mises / 1000).toFixed(1)} kPa`;
 
         renderStaticMesh(scale);
-      } else {
+      } else if (activeTab === 'modal') {
         currentModalResult = solve_geometry_vibration(
           geomType, 0.8, stellationH, e_val, nu, 1000.0, 3
         );
@@ -581,8 +585,73 @@
         document.getElementById('stat-metric-val').textContent = `${f.toFixed(2)} Hz`;
         document.getElementById('stat-elements').textContent = `${currentModalResult.original_vertices.length} nodes`;
         document.getElementById('stat-volume').textContent = `Mode ${modeIdx + 1} Harmonic`;
+      } else if (activeTab === 'stokes') {
+        const t0_stokes = performance.now();
+        const res = solve_stokes_2d_wasm(14, 14, 1.0);
+        const t1_stokes = performance.now();
+        const maxV = Math.max(...res.velocity_magnitude);
+        document.getElementById('stat-time').textContent = `${(t1_stokes - t0_stokes).toFixed(2)} ms`;
+        document.getElementById('stat-metric-label').textContent = 'Peak Velocity:';
+        document.getElementById('stat-metric-val').textContent = `${maxV.toFixed(3)} m/s`;
+        document.getElementById('stat-elements').textContent = `${res.boundary_indices.length / 3} triangles`;
+        document.getElementById('stat-volume').textContent = 'Poiseuille Flow';
+        document.getElementById('legend-max').textContent = `${maxV.toFixed(2)} m/s`;
+        render2DField(res.vertices, res.velocity_magnitude, res.boundary_indices, maxV);
+      } else if (activeTab === 'heat') {
+        const t0_heat = performance.now();
+        currentHeatResult = solve_transient_heat_2d_wasm(14, 14, 1.0, 0.02, 25);
+        const t1_heat = performance.now();
+        heatStep = 0;
+        document.getElementById('stat-time').textContent = `${(t1_heat - t0_heat).toFixed(2)} ms`;
+        document.getElementById('stat-metric-label').textContent = 'Thermal Diffusion:';
+        document.getElementById('stat-metric-val').textContent = 't = 0.00 s';
+        document.getElementById('stat-elements').textContent = `${currentHeatResult.boundary_indices.length / 3} triangles`;
+        document.getElementById('stat-volume').textContent = 'Crank-Nicolson';
+        document.getElementById('legend-max').textContent = '100.0 °C';
       }
     }
+
+    function render2DField(vertices, values, indices, maxVal) {
+      const numVerts = vertices.length;
+      const positions = new Float32Array(numVerts * 3);
+      const colors = new Float32Array(numVerts * 3);
+
+      for (let i = 0; i < numVerts; i++) {
+        positions[3 * i] = vertices[i][0] - 0.5;
+        positions[3 * i + 1] = vertices[i][1] - 0.5;
+        positions[3 * i + 2] = 0.0;
+
+        const valNorm = maxVal > 0 ? Math.max(0, Math.min(1, values[i] / maxVal)) : 0;
+        const [cr, cg, cb] = getTurboColor(valNorm);
+        colors[3 * i] = cr;
+        colors[3 * i + 1] = cg;
+        colors[3 * i + 2] = cb;
+      }
+
+      if (meshObject) scene.remove(meshObject);
+      if (wireframeObject) scene.remove(wireframeObject);
+
+      const geometry = new THREE.BufferGeometry();
+      geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+      geometry.setIndex(indices);
+      geometry.computeVertexNormals();
+
+      const material = new THREE.MeshStandardMaterial({
+        vertexColors: true,
+        roughness: 0.35,
+        side: THREE.DoubleSide
+      });
+      meshObject = new THREE.Mesh(geometry, material);
+      scene.add(meshObject);
+
+      const wireGeo = new THREE.WireframeGeometry(geometry);
+      wireframeObject = new THREE.LineSegments(wireGeo, new THREE.LineBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.2 }));
+      scene.add(wireframeObject);
+    }
+
+    let currentHeatResult = null;
+    let heatStep = 0;
 
     // UI Listeners
     document.getElementById('geom-select').addEventListener('change', (e) => {
@@ -617,25 +686,25 @@
       runCalculation();
     });
 
-    document.getElementById('tab-static').addEventListener('click', () => {
-      activeTab = 'static';
-      document.getElementById('tab-static').classList.add('active');
-      document.getElementById('tab-modal').classList.remove('active');
-      document.getElementById('static-controls').style.display = 'block';
-      document.getElementById('modal-controls').style.display = 'none';
+    function setTab(tabName) {
+      activeTab = tabName;
+      ['static', 'modal', 'stokes', 'heat'].forEach(t => {
+        const btn = document.getElementById(`tab-${t}`);
+        if (btn) {
+          if (t === tabName) btn.classList.add('active');
+          else btn.classList.remove('active');
+        }
+      });
+      document.getElementById('static-controls').style.display = (tabName === 'static') ? 'block' : 'none';
+      document.getElementById('modal-controls').style.display = (tabName === 'modal') ? 'block' : 'none';
       document.getElementById('legend-box').style.display = 'block';
       runCalculation();
-    });
+    }
 
-    document.getElementById('tab-modal').addEventListener('click', () => {
-      activeTab = 'modal';
-      document.getElementById('tab-modal').classList.add('active');
-      document.getElementById('tab-static').classList.remove('active');
-      document.getElementById('static-controls').style.display = 'none';
-      document.getElementById('modal-controls').style.display = 'block';
-      document.getElementById('legend-box').style.display = 'none';
-      runCalculation();
-    });
+    document.getElementById('tab-static').addEventListener('click', () => setTab('static'));
+    document.getElementById('tab-modal').addEventListener('click', () => setTab('modal'));
+    document.getElementById('tab-stokes').addEventListener('click', () => setTab('stokes'));
+    document.getElementById('tab-heat').addEventListener('click', () => setTab('heat'));
 
     document.getElementById('mode-select').addEventListener('change', () => {
       if (currentModalResult) {
@@ -669,12 +738,22 @@
       renderer.setSize(window.innerWidth, window.innerHeight);
     });
 
+    let lastHeatFrame = 0;
+
     function animate(timestamp) {
       requestAnimationFrame(animate);
       controls.update();
 
       if (activeTab === 'modal') {
         updateModalAnimation(timestamp * 0.001);
+      } else if (activeTab === 'heat' && currentHeatResult) {
+        if (timestamp - lastHeatFrame > 120) {
+          lastHeatFrame = timestamp;
+          heatStep = (heatStep + 1) % currentHeatResult.temperature_history.length;
+          const vals = currentHeatResult.temperature_history[heatStep];
+          render2DField(currentHeatResult.vertices, vals, currentHeatResult.boundary_indices, 100.0);
+          document.getElementById('stat-metric-val').textContent = `t = ${currentHeatResult.time_steps[heatStep].toFixed(2)} s`;
+        }
       }
 
       renderer.render(scene, camera);

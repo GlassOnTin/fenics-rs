@@ -21,6 +21,16 @@ export function solve_geometry_vibration(geom_type: string, size: number, height
  */
 export function solve_poisson_2d_wasm(nx: number, ny: number): any;
 
+/**
+ * Solve 2D Stokes Channel Flow in WebAssembly.
+ */
+export function solve_stokes_2d_wasm(nx: number, ny: number, viscosity: number): any;
+
+/**
+ * Solve 2D Transient Heat Conduction in WebAssembly.
+ */
+export function solve_transient_heat_2d_wasm(nx: number, ny: number, diffusivity: number, dt: number, num_steps: number): any;
+
 export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembly.Module;
 
 export interface InitOutput {
@@ -29,6 +39,8 @@ export interface InitOutput {
     readonly solve_geometry_elasticity: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number, i: number) => [number, number, number];
     readonly solve_geometry_vibration: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number) => [number, number, number];
     readonly solve_poisson_2d_wasm: (a: number, b: number) => [number, number, number];
+    readonly solve_stokes_2d_wasm: (a: number, b: number, c: number) => [number, number, number];
+    readonly solve_transient_heat_2d_wasm: (a: number, b: number, c: number, d: number, e: number) => [number, number, number];
     readonly __wbindgen_malloc: (a: number, b: number) => number;
     readonly __wbindgen_realloc: (a: number, b: number, c: number, d: number) => number;
     readonly __wbindgen_externrefs: WebAssembly.Table;

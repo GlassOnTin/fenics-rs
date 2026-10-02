@@ -48,6 +48,25 @@ pub struct WasmPoissonResult {
     pub iterations: usize,
 }
 
+#[derive(Serialize, Deserialize)]
+pub struct WasmStokesResult {
+    pub vertices: Vec<[f64; 2]>,
+    pub ux: Vec<f64>,
+    pub uy: Vec<f64>,
+    pub pressure: Vec<f64>,
+    pub velocity_magnitude: Vec<f64>,
+    pub boundary_indices: Vec<u32>,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct WasmHeatResult {
+    pub vertices: Vec<[f64; 2]>,
+    pub time_steps: Vec<f64>,
+    pub temperature_history: Vec<Vec<f64>>,
+    pub final_temperature: Vec<f64>,
+    pub boundary_indices: Vec<u32>,
+}
+
 /// Helper to generate a mesh based on geometry type string.
 fn build_mesh(geom_type: &str, size: f64, height_param: f64) -> TetrahedronMesh {
     match geom_type {
@@ -264,3 +283,130 @@ pub fn solve_poisson_2d_wasm(nx: usize, ny: usize) -> Result<JsValue, JsValue> {
     serde_wasm_bindgen::to_value(&result)
         .map_err(|e| JsValue::from_str(&format!("Serialization error: {}", e)))
 }
+
+/// Solve 2D Stokes Channel Flow in WebAssembly.
+#[wasm_bindgen]
+pub fn solve_stokes_2d_wasm(nx: usize, ny: usize, viscosity: f64) -> Result<JsValue, JsValue> {
+    let mesh = unit_square(nx, ny);
+    let n = mesh.num_vertices();
+
+    let mut ux_bcs = Vec::new();
+    let mut uy_bcs = Vec::new();
+    let mut p_bcs = Vec::new();
+
+    for i in 0..n {
+        let x = mesh.vertices[i][0];
+        let y = mesh.vertices[i][1];
+        if y.abs() < 1e-6 || (y - 1.0).abs() < 1e-6 {
+            ux_bcs.push((i, 0.0));
+            uy_bcs.push((i, 0.0));
+        } else if x.abs() < 1e-6 {
+            ux_bcs.push((i, 4.0 * y * (1.0 - y)));
+            uy_bcs.push((i, 0.0));
+        }
+        if (x - 1.0).abs() < 1e-6 {
+            p_bcs.push((i, 0.0));
+        }
+    }
+
+    let bcs = fenics_solver::StokesBC {
+        ux_dofs: ux_bcs,
+        uy_dofs: uy_bcs,
+        p_dofs: p_bcs,
+    };
+
+    let sol = fenics_solver::solve_stokes_2d(&mesh, viscosity, &bcs)
+        .map_err(|e| JsValue::from_str(&e))?;
+
+    let mut velocity_magnitude = Vec::with_capacity(n);
+    for i in 0..n {
+        velocity_magnitude.push((sol.ux[i] * sol.ux[i] + sol.uy[i] * sol.uy[i]).sqrt());
+    }
+
+    let mut boundary_indices = Vec::with_capacity(mesh.cells.len() * 3);
+    for cell in &mesh.cells {
+        boundary_indices.push(cell[0] as u32);
+        boundary_indices.push(cell[1] as u32);
+        boundary_indices.push(cell[2] as u32);
+    }
+
+    let res = WasmStokesResult {
+        vertices: mesh.vertices,
+        ux: sol.ux,
+        uy: sol.uy,
+        pressure: sol.pressure,
+        velocity_magnitude,
+        boundary_indices,
+    };
+
+    serde_wasm_bindgen::to_value(&res)
+        .map_err(|e| JsValue::from_str(&format!("Serialization error: {}", e)))
+}
+
+/// Solve 2D Transient Heat Conduction in WebAssembly.
+#[wasm_bindgen]
+pub fn solve_transient_heat_2d_wasm(
+    nx: usize,
+    ny: usize,
+    diffusivity: f64,
+    dt: f64,
+    num_steps: usize,
+) -> Result<JsValue, JsValue> {
+    let mesh = unit_square(nx, ny);
+    let n = mesh.num_vertices();
+
+    let mut left_dofs = Vec::new();
+    let mut right_dofs = Vec::new();
+
+    for i in 0..n {
+        let x = mesh.vertices[i][0];
+        if x.abs() < 1e-6 {
+            left_dofs.push(i);
+        } else if (x - 1.0).abs() < 1e-6 {
+            right_dofs.push(i);
+        }
+    }
+
+    let bcs = vec![
+        fenics_assembly::poisson::DirichletBC {
+            dofs: left_dofs.clone(),
+            values: vec![100.0; left_dofs.len()],
+        },
+        fenics_assembly::poisson::DirichletBC {
+            dofs: right_dofs.clone(),
+            values: vec![0.0; right_dofs.len()],
+        },
+    ];
+
+    let u0 = vec![0.0; n];
+    let sol = fenics_solver::solve_transient_heat_2d(
+        &mesh,
+        diffusivity,
+        &u0,
+        &bcs,
+        dt,
+        num_steps,
+        fenics_solver::TimeSteppingScheme::CrankNicolson,
+        |_t, _pt| 0.0,
+    )
+    .map_err(|e| JsValue::from_str(&e))?;
+
+    let mut boundary_indices = Vec::with_capacity(mesh.cells.len() * 3);
+    for cell in &mesh.cells {
+        boundary_indices.push(cell[0] as u32);
+        boundary_indices.push(cell[1] as u32);
+        boundary_indices.push(cell[2] as u32);
+    }
+
+    let res = WasmHeatResult {
+        vertices: mesh.vertices,
+        time_steps: sol.time_steps,
+        temperature_history: sol.temperature_history,
+        final_temperature: sol.final_temperature,
+        boundary_indices,
+    };
+
+    serde_wasm_bindgen::to_value(&res)
+        .map_err(|e| JsValue::from_str(&format!("Serialization error: {}", e)))
+}
+

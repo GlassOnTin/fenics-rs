@@ -78,6 +78,38 @@ export function solve_poisson_2d_wasm(nx, ny) {
     }
     return takeFromExternrefTable0(ret[0]);
 }
+
+/**
+ * Solve 2D Stokes Channel Flow in WebAssembly.
+ * @param {number} nx
+ * @param {number} ny
+ * @param {number} viscosity
+ * @returns {any}
+ */
+export function solve_stokes_2d_wasm(nx, ny, viscosity) {
+    const ret = wasm.solve_stokes_2d_wasm(nx, ny, viscosity);
+    if (ret[2]) {
+        throw takeFromExternrefTable0(ret[1]);
+    }
+    return takeFromExternrefTable0(ret[0]);
+}
+
+/**
+ * Solve 2D Transient Heat Conduction in WebAssembly.
+ * @param {number} nx
+ * @param {number} ny
+ * @param {number} diffusivity
+ * @param {number} dt
+ * @param {number} num_steps
+ * @returns {any}
+ */
+export function solve_transient_heat_2d_wasm(nx, ny, diffusivity, dt, num_steps) {
+    const ret = wasm.solve_transient_heat_2d_wasm(nx, ny, diffusivity, dt, num_steps);
+    if (ret[2]) {
+        throw takeFromExternrefTable0(ret[1]);
+    }
+    return takeFromExternrefTable0(ret[0]);
+}
 function __wbg_get_imports() {
     const import0 = {
         __proto__: null,
