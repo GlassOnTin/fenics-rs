@@ -1,0 +1,19 @@
+[package]
+name = "fenics-wasm"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+fenics-element = { path = "../fenics-element" }
+fenics-mesh = { path = "../fenics-mesh" }
+fenics-assembly = { path = "../fenics-assembly" }
+fenics-solver = { path = "../fenics-solver" }
+wasm-bindgen = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+serde-wasm-bindgen = { workspace = true }

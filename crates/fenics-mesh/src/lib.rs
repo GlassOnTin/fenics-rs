@@ -3,5 +3,5 @@
 pub mod generators;
 pub mod mesh;
 
-pub use generators::{unit_cube, unit_interval, unit_square};
+pub use generators::{box_beam, unit_cube, unit_interval, unit_square};
 pub use mesh::{BoundaryFacet, IntervalMesh, SimplicialMesh, TetrahedronMesh, TriangleMesh};

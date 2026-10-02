@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>fenics-rs | WebAssembly 3D Finite Element Simulator</title>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --card-bg: rgba(22, 27, 34, 0.85);
+      --border: #30363d;
+      --text: #c9d1d9;
+      --text-bright: #f0f6fc;
+      --accent: #58a6ff;
+      --accent-hover: #1f6feb;
+      --danger: #f85149;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body, html {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      touch-action: none;
+    }
+
+    #viewport {
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
+
+    /* Floating UI Panel */
+    .panel {
+      position: absolute;
+      top: 16px;
+      left: 16px;
+      width: 340px;
+      max-width: calc(100vw - 32px);
+      background: var(--card-bg);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 18px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+      z-index: 10;
+      max-height: calc(100vh - 32px);
+      overflow-y: auto;
+    }
+
+    h1 {
+      font-size: 1.15rem;
+      color: var(--text-bright);
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .badge {
+      font-size: 0.65rem;
+      background: rgba(88, 166, 255, 0.2);
+      color: var(--accent);
+      padding: 2px 6px;
+      border-radius: 6px;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    p.subtitle {
+      font-size: 0.75rem;
+      color: #8b949e;
+      margin-bottom: 14px;
+    }
+
+    .section-title {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #8b949e;
+      margin-top: 14px;
+      margin-bottom: 8px;
+      font-weight: 700;
+    }
+
+    .control-group {
+      margin-bottom: 10px;
+    }
+
+    .label-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.75rem;
+      margin-bottom: 4px;
+    }
+
+    .label-row span.val {
+      color: var(--accent);
+      font-family: monospace;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      height: 6px;
+      border-radius: 3px;
+      background: #21262d;
+      outline: none;
+      -webkit-appearance: none;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: var(--accent);
+      cursor: pointer;
+    }
+
+    .btn {
+      width: 100%;
+      background: var(--accent);
+      color: #ffffff;
+      border: none;
+      padding: 10px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 0.85rem;
+      cursor: pointer;
+      margin-top: 10px;
+      transition: background 0.15s;
+    }
+
+    .btn:hover {
+      background: var(--accent-hover);
+    }
+
+    /* HUD Stats */
+    .stats-card {
+      background: rgba(13, 17, 23, 0.7);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px;
+      margin-top: 12px;
+      font-size: 0.75rem;
+    }
+
+    .stat-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 4px;
+    }
+
+    .stat-row:last-child { margin-bottom: 0; }
+    .stat-row span.num {
+      font-family: monospace;
+      font-weight: 600;
+      color: var(--text-bright);
+    }
+
+    /* Legend */
+    .legend {
+      margin-top: 12px;
+    }
+
+    .legend-bar {
+      height: 10px;
+      border-radius: 5px;
+      background: linear-gradient(to right, #0000ff, #00ffff, #00ff00, #ffff00, #ff0000);
+      margin-bottom: 4px;
+    }
+
+    .legend-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.7rem;
+      color: #8b949e;
+      font-family: monospace;
+    }
+  </style>
+</head>
+<body>
+  <div id="viewport"></div>
+
+  <div class="panel">
+    <h1>fenics-rs <span class="badge">WASM</span></h1>
+    <p class="subtitle">3D Navier-Cauchy Linear Elasticity in WebAssembly</p>
+
+    <div class="section-title">Applied Load & Scale</div>
+    
+    <div class="control-group">
+      <div class="label-row">
+        <span>Downward Load (Fz)</span>
+        <span class="val" id="fz-val">-1000 N/m³</span>
+      </div>
+      <input type="range" id="fz-slider" min="-5000" max="0" step="100" value="-1000">
+    </div>
+
+    <div class="control-group">
+      <div class="label-row">
+        <span>Lateral Load (Fy)</span>
+        <span class="val" id="fy-val">0 N/m³</span>
+      </div>
+      <input type="range" id="fy-slider" min="-2000" max="2000" step="100" value="0">
+    </div>
+
+    <div class="control-group">
+      <div class="label-row">
+        <span>Displacement Scale</span>
+        <span class="val" id="scale-val">1.0x</span>
+      </div>
+      <input type="range" id="scale-slider" min="0.1" max="5.0" step="0.1" value="1.0">
+    </div>
+
+    <div class="section-title">Material Properties</div>
+
+    <div class="control-group">
+      <div class="label-row">
+        <span>Young's Modulus (E)</span>
+        <span class="val" id="e-val">1.0 MPa</span>
+      </div>
+      <input type="range" id="e-slider" min="0.2" max="5.0" step="0.1" value="1.0">
+    </div>
+
+    <div class="control-group">
+      <div class="label-row">
+        <span>Poisson's Ratio (ν)</span>
+        <span class="val" id="nu-val">0.30</span>
+      </div>
+      <input type="range" id="nu-slider" min="0.0" max="0.45" step="0.05" value="0.30">
+    </div>
+
+    <button class="btn" id="solve-btn">Solve in WebAssembly</button>
+
+    <div class="stats-card">
+      <div class="stat-row">
+        <span>Solve Time (WASM):</span>
+        <span class="num" id="stat-time">-- ms</span>
+      </div>
+      <div class="stat-row">
+        <span>PCG Iterations:</span>
+        <span class="num" id="stat-iters">--</span>
+      </div>
+      <div class="stat-row">
+        <span>Elements / Vertices:</span>
+        <span class="num" id="stat-mesh">1,080 / 336</span>
+      </div>
+      <div class="stat-row">
+        <span>Max Von Mises:</span>
+        <span class="num" id="stat-vm">-- Pa</span>
+      </div>
+      <div class="stat-row">
+        <span>Tip Deflection:</span>
+        <span class="num" id="stat-tip">-- mm</span>
+      </div>
+    </div>
+
+    <div class="legend">
+      <div class="legend-bar"></div>
+      <div class="legend-labels">
+        <span>0 Pa</span>
+        <span>Von Mises Stress</span>
+        <span id="legend-max">Max</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Import Three.js via ES Modules -->
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+      }
+    }
+  </script>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+    import init, { solve_cantilever_beam } from './pkg/fenics_wasm.js';
+
+    // 1. Initialize Three.js Scene
+    const container = document.getElementById('viewport');
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x0a0e14);
+
+    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.01, 100);
+    camera.position.set(1.6, 0.8, 1.4);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    container.appendChild(renderer.domElement);
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.target.set(0.5, 0.05, 0.05);
+
+    // Lights
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+    scene.add(ambientLight);
+    const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
+    dirLight.position.set(2, 4, 3);
+    scene.add(dirLight);
+
+    // Coordinate Grid
+    const grid = new THREE.GridHelper(2, 20, 0x30363d, 0x1f242c);
+    grid.position.set(0.5, -0.05, 0.05);
+    scene.add(grid);
+
+    // Fixed root indicator (clamped wall at x = 0)
+    const wallGeo = new THREE.BoxGeometry(0.01, 0.3, 0.3);
+    const wallMat = new THREE.MeshStandardMaterial({ color: 0x484f58, metalness: 0.5, roughness: 0.5 });
+    const wallMesh = new THREE.Mesh(wallGeo, wallMat);
+    wallMesh.position.set(-0.005, 0.05, 0.05);
+    scene.add(wallMesh);
+
+    // State
+    let currentResult = null;
+    let meshObject = null;
+    let wireframeObject = null;
+
+    // Turbo colormap approximation for Von Mises visualization
+    function getTurboColor(t) {
+      t = Math.max(0.0, Math.min(1.0, t));
+      // Standard Jet colormap
+      let r = Math.max(0, Math.min(1, 1.5 - Math.abs(t * 4 - 3)));
+      let g = Math.max(0, Math.min(1, 1.5 - Math.abs(t * 4 - 2)));
+      let b = Math.max(0, Math.min(1, 1.5 - Math.abs(t * 4 - 1)));
+      return [r, g, b];
+    }
+
+    function updateVisualization(dispScale) {
+      if (!currentResult) return;
+
+      const { original_vertices, deformed_vertices, boundary_indices, vertex_von_mises, max_von_mises } = currentResult;
+      const numVerts = original_vertices.length;
+
+      const positions = new Float32Array(numVerts * 3);
+      const colors = new Float32Array(numVerts * 3);
+
+      for (let i = 0; i < numVerts; i++) {
+        const ox = original_vertices[i][0];
+        const oy = original_vertices[i][1];
+        const oz = original_vertices[i][2];
+
+        const dx = deformed_vertices[i][0] - ox;
+        const dy = deformed_vertices[i][1] - oy;
+        const dz = deformed_vertices[i][2] - oz;
+
+        positions[3 * i] = ox + dx * dispScale;
+        positions[3 * i + 1] = oy + dy * dispScale;
+        positions[3 * i + 2] = oz + dz * dispScale;
+
+        const vmNorm = max_von_mises > 0 ? vertex_von_mises[i] / max_von_mises : 0;
+        const [cr, cg, cb] = getTurboColor(vmNorm);
+        colors[3 * i] = cr;
+        colors[3 * i + 1] = cg;
+        colors[3 * i + 2] = cb;
+      }
+
+      if (meshObject) scene.remove(meshObject);
+      if (wireframeObject) scene.remove(wireframeObject);
+
+      const geometry = new THREE.BufferGeometry();
+      geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+      geometry.setIndex(boundary_indices);
+      geometry.computeVertexNormals();
+
+      const material = new THREE.MeshStandardMaterial({
+        vertexColors: true,
+        roughness: 0.3,
+        metalness: 0.1,
+        side: THREE.DoubleSide
+      });
+
+      meshObject = new THREE.Mesh(geometry, material);
+      scene.add(meshObject);
+
+      const wireGeo = new THREE.WireframeGeometry(geometry);
+      wireframeObject = new THREE.LineSegments(wireGeo, new THREE.LineBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.15 }));
+      scene.add(wireframeObject);
+    }
+
+    async function runSimulation() {
+      const fz = parseFloat(document.getElementById('fz-slider').value);
+      const fy = parseFloat(document.getElementById('fy-slider').value);
+      const e_val = parseFloat(document.getElementById('e-slider').value) * 1e6;
+      const nu = parseFloat(document.getElementById('nu-slider').value);
+      const scale = parseFloat(document.getElementById('scale-slider').value);
+
+      const t0 = performance.now();
+      try {
+        currentResult = solve_cantilever_beam(
+          1.0, 0.1, 0.1,  // Length, Width, Height
+          20, 3, 3,       // Nx, Ny, Nz (1,080 elements)
+          e_val, nu,
+          0.0, fy, fz
+        );
+        const t1 = performance.now();
+
+        // Update HUD Stats
+        document.getElementById('stat-time').textContent = `${(t1 - t0).toFixed(2)} ms`;
+        document.getElementById('stat-iters').textContent = currentResult.iterations;
+        document.getElementById('stat-vm').textContent = `${currentResult.max_von_mises.toFixed(1)} Pa`;
+        document.getElementById('legend-max').textContent = `${(currentResult.max_von_mises / 1000).toFixed(1)} kPa`;
+
+        // Calculate tip deflection
+        let maxTip = 0;
+        for (let i = 0; i < currentResult.original_vertices.length; i++) {
+          if (Math.abs(currentResult.original_vertices[i][0] - 1.0) < 1e-5) {
+            const dz = currentResult.deformed_vertices[i][2] - currentResult.original_vertices[i][2];
+            maxTip = Math.min(maxTip, dz);
+          }
+        }
+        document.getElementById('stat-tip').textContent = `${(maxTip * 1000).toFixed(1)} mm`;
+
+        updateVisualization(scale);
+      } catch (err) {
+        console.error("Simulation error:", err);
+      }
+    }
+
+    // UI Event Listeners
+    document.getElementById('fz-slider').addEventListener('input', (e) => {
+      document.getElementById('fz-val').textContent = `${e.target.value} N/m³`;
+      runSimulation();
+    });
+
+    document.getElementById('fy-slider').addEventListener('input', (e) => {
+      document.getElementById('fy-val').textContent = `${e.target.value} N/m³`;
+      runSimulation();
+    });
+
+    document.getElementById('e-slider').addEventListener('input', (e) => {
+      document.getElementById('e-val').textContent = `${parseFloat(e.target.value).toFixed(1)} MPa`;
+      runSimulation();
+    });
+
+    document.getElementById('nu-slider').addEventListener('input', (e) => {
+      document.getElementById('nu-val').textContent = parseFloat(e.target.value).toFixed(2);
+      runSimulation();
+    });
+
+    document.getElementById('scale-slider').addEventListener('input', (e) => {
+      const val = parseFloat(e.target.value);
+      document.getElementById('scale-val').textContent = `${val.toFixed(1)}x`;
+      updateVisualization(val);
+    });
+
+    document.getElementById('solve-btn').addEventListener('click', runSimulation);
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    // Render loop
+    function animate() {
+      requestAnimationFrame(animate);
+      controls.update();
+      renderer.render(scene, camera);
+    }
+    animate();
+
+    // Initialize WASM and kick off initial solve
+    await init();
+    runSimulation();
+  </script>
+</body>
+</html>

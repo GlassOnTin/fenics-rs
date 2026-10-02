@@ -1,4 +1,3 @@
-use approx::assert_relative_eq;
 use fenics_mesh::{unit_cube, unit_square};
 use fenics_solver::{compute_l2_error_2d, compute_l2_error_3d, solve_poisson_2d, solve_poisson_3d};
 use std::f64::consts::PI;

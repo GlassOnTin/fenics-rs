@@ -54,9 +54,15 @@ pub fn unit_square(nx: usize, ny: usize) -> TriangleMesh {
     SimplicialMesh::new(vertices, cells)
 }
 
-/// Generate a 3D uniform tetrahedral mesh on [0, 1]^3 with `nx` x `ny` x `nz` grid divisions.
-/// Each cube cell is decomposed into 6 tetrahedra using the standard Kuhn triangulation.
-pub fn unit_cube(nx: usize, ny: usize, nz: usize) -> TetrahedronMesh {
+/// Generate a 3D uniform tetrahedral mesh on [0, L] x [0, W] x [0, H] with `nx` x `ny` x `nz` grid divisions.
+pub fn box_beam(
+    length: f64,
+    width: f64,
+    height: f64,
+    nx: usize,
+    ny: usize,
+    nz: usize,
+) -> TetrahedronMesh {
     assert!(
         nx > 0 && ny > 0 && nz > 0,
         "nx, ny, and nz must be at least 1"
@@ -65,11 +71,11 @@ pub fn unit_cube(nx: usize, ny: usize, nz: usize) -> TetrahedronMesh {
     let mut vertices = Vec::with_capacity(num_verts);
 
     for k in 0..=nz {
-        let z = k as f64 / nz as f64;
+        let z = (k as f64 / nz as f64) * height;
         for j in 0..=ny {
-            let y = j as f64 / ny as f64;
+            let y = (j as f64 / ny as f64) * width;
             for i in 0..=nx {
-                let x = i as f64 / nx as f64;
+                let x = (i as f64 / nx as f64) * length;
                 vertices.push([x, y, z]);
             }
         }
@@ -103,6 +109,12 @@ pub fn unit_cube(nx: usize, ny: usize, nz: usize) -> TetrahedronMesh {
     }
 
     SimplicialMesh::new(vertices, cells)
+}
+
+/// Generate a 3D uniform tetrahedral mesh on [0, 1]^3 with `nx` x `ny` x `nz` grid divisions.
+/// Each cube cell is decomposed into 6 tetrahedra using the standard Kuhn triangulation.
+pub fn unit_cube(nx: usize, ny: usize, nz: usize) -> TetrahedronMesh {
+    box_beam(1.0, 1.0, 1.0, nx, ny, nz)
 }
 
 #[cfg(test)]
