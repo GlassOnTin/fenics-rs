@@ -1,0 +1,22 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/fenics-element",
+    "crates/fenics-mesh",
+    "crates/fenics-assembly",
+    "crates/fenics-solver",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+authors = ["GlassOnTin", "Antigravity"]
+license = "AGPL-3.0-or-later"
+
+[workspace.dependencies]
+rayon = "1.10"
+faer = "0.20"
+nalgebra = "0.33"
+bytemuck = "1.16"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"

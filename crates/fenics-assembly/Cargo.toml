@@ -1,0 +1,16 @@
+[package]
+name = "fenics-assembly"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[dependencies]
+fenics-element = { path = "../fenics-element" }
+fenics-mesh = { path = "../fenics-mesh" }
+nalgebra = { workspace = true }
+rayon = { workspace = true }
+faer = { workspace = true }
+
+[dev-dependencies]
+approx = "0.5"
