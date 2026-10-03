@@ -1,10 +1,19 @@
 # fenics-rs
 
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](LICENSE)
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-glassontin.github.io%2Ffenics--rs-brightgreen?logo=github)](https://glassontin.github.io/fenics-rs/)
 [![Build & Test Status](https://img.shields.io/badge/tests-44%20passed-brightgreen.svg)](crates/)
 [![WebAssembly Native](https://img.shields.io/badge/wasm-ready-orange.svg)](crates/fenics-wasm)
 
 A pure-Rust, zero-cost variational finite element framework inspired by the abstract mathematical elegance of **FEniCS / DOLFINx**, engineered for seamless execution across desktop workstations, cloud clusters, and client-side WebAssembly browsers.
+
+---
+
+> ### 🚀 Live WebAssembly Testbed (Zero-Install, Client-Side Simulation)
+> **Launch the live interactive multiphysics studio:**  
+> **👉 [https://glassontin.github.io/fenics-rs/](https://glassontin.github.io/fenics-rs/) 👈**
+>
+> *Interactive 3D linear elasticity, structural modal oscillations, 2D Stokes fluid streamlines, and transient thermal diffusion.*
 
 ---
 
