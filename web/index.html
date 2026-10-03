@@ -466,7 +466,9 @@
       geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
       geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
       geometry.setIndex(new THREE.BufferAttribute(new Uint32Array(boundary_indices), 1));
-      geometry.computeVertexNormals();
+      
+      const flatGeom = geometry.toNonIndexed();
+      flatGeom.computeVertexNormals();
 
       const material = new THREE.MeshStandardMaterial({
         vertexColors: true,
@@ -477,10 +479,10 @@
         depthTest: true
       });
 
-      meshObject = new THREE.Mesh(geometry, material);
+      meshObject = new THREE.Mesh(flatGeom, material);
       scene.add(meshObject);
 
-      const wireGeo = new THREE.WireframeGeometry(geometry);
+      const wireGeo = new THREE.WireframeGeometry(flatGeom);
       wireframeObject = new THREE.LineSegments(wireGeo, new THREE.LineBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.2 }));
       scene.add(wireframeObject);
     }
