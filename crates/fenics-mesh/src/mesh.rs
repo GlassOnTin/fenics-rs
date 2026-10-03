@@ -143,32 +143,58 @@ impl SimplicialMesh<2, 3> {
 impl SimplicialMesh<3, 4> {
     /// Extract all exterior boundary triangles.
     pub fn extract_boundary_facets(&self) -> Vec<BoundaryFacet<3>> {
-        let mut face_counts = HashMap::new();
+        let mut face_map: HashMap<[usize; 3], (usize, usize, usize, [usize; 3])> = HashMap::new();
 
         for (cell_idx, cell) in self.cells.iter().enumerate() {
-            // Tetrahedron has 4 triangular faces:
+            // Tetrahedron has 4 triangular faces: (local_idx, face_vertices, opposite_vertex)
             let faces = [
-                (0, [cell[1], cell[2], cell[3]]),
-                (1, [cell[0], cell[2], cell[3]]),
-                (2, [cell[0], cell[1], cell[3]]),
-                (3, [cell[0], cell[1], cell[2]]),
+                (0, [cell[1], cell[2], cell[3]], cell[0]),
+                (1, [cell[0], cell[2], cell[3]], cell[1]),
+                (2, [cell[0], cell[1], cell[3]], cell[2]),
+                (3, [cell[0], cell[1], cell[2]], cell[3]),
             ];
 
-            for (local_idx, mut face) in faces {
-                face.sort_unstable();
-                face_counts
-                    .entry(face)
-                    .and_modify(|(count, _, _)| *count += 1)
-                    .or_insert((1, cell_idx, local_idx));
+            for (local_idx, face, opp_idx) in faces {
+                let mut sorted = face;
+                sorted.sort_unstable();
+
+                face_map
+                    .entry(sorted)
+                    .and_modify(|(count, _, _, _)| *count += 1)
+                    .or_insert_with(|| {
+                        // Ensure outward-pointing normal (away from opposite vertex)
+                        let v_a = self.vertices[face[0]];
+                        let v_b = self.vertices[face[1]];
+                        let v_c = self.vertices[face[2]];
+                        let v_opp = self.vertices[opp_idx];
+
+                        let ab = [v_b[0] - v_a[0], v_b[1] - v_a[1], v_b[2] - v_a[2]];
+                        let ac = [v_c[0] - v_a[0], v_c[1] - v_a[1], v_c[2] - v_a[2]];
+                        let normal = [
+                            ab[1] * ac[2] - ab[2] * ac[1],
+                            ab[2] * ac[0] - ab[0] * ac[2],
+                            ab[0] * ac[1] - ab[1] * ac[0],
+                        ];
+                        let to_face = [v_a[0] - v_opp[0], v_a[1] - v_opp[1], v_a[2] - v_opp[2]];
+                        let dot = normal[0] * to_face[0] + normal[1] * to_face[1] + normal[2] * to_face[2];
+
+                        let oriented_face = if dot >= 0.0 {
+                            face
+                        } else {
+                            [face[0], face[2], face[1]]
+                        };
+
+                        (1, cell_idx, local_idx, oriented_face)
+                    });
             }
         }
 
-        face_counts
+        face_map
             .into_iter()
-            .filter_map(|(vertices, (count, cell_idx, local_facet_idx))| {
+            .filter_map(|(_sorted, (count, cell_idx, local_facet_idx, oriented_vertices))| {
                 if count == 1 {
                     Some(BoundaryFacet {
-                        vertices,
+                        vertices: oriented_vertices,
                         cell_idx,
                         local_facet_idx,
                     })
