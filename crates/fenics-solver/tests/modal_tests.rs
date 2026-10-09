@@ -1,7 +1,10 @@
+use approx::assert_relative_eq;
 use fenics_assembly::elasticity::{assemble_elasticity_stiffness_3d, ElasticMaterial};
 use fenics_assembly::mass::assemble_elasticity_mass_3d;
 use fenics_mesh::generators::box_beam;
-use fenics_solver::solve_vibration_modes;
+use fenics_solver::{
+    fold_dirichlet, solve_cg, solve_vibration_modes, solve_vibration_modes_with_inner,
+};
 
 #[test]
 fn test_cantilever_natural_frequencies() {
@@ -79,4 +82,69 @@ fn test_cantilever_natural_frequencies() {
         "Expected higher harmonic mode around 10-15 Hz, got {}",
         f3
     );
+}
+
+#[test]
+fn test_frequencies_scale_as_one_over_sqrt_density() {
+    // The mm-N-s unit systems multiply far apart stiffness and density scales (a steel part:
+    // E ~ 1e5, rho ~ 7.85e-9); the internal mass rescaling must leave the frequencies exact.
+    // 10^4 times the density gives 1/sqrt(10^4) = 1/100 of every frequency.
+    let mesh = box_beam(1.0, 0.1, 0.1, 8, 1, 1);
+    let material = ElasticMaterial::new(1.0e7, 0.3);
+    let mut fixed_dofs = Vec::new();
+    for (i, vert) in mesh.vertices.iter().enumerate() {
+        if vert[0] < 1e-6 {
+            fixed_dofs.push(3 * i);
+            fixed_dofs.push(3 * i + 1);
+            fixed_dofs.push(3 * i + 2);
+        }
+    }
+
+    let k = assemble_elasticity_stiffness_3d(&mesh, &material);
+    let m1 = assemble_elasticity_mass_3d(&mesh, 1000.0);
+    let m2 = assemble_elasticity_mass_3d(&mesh, 1000.0 * 10_000.0);
+
+    let a = solve_vibration_modes(&k, &m1, &fixed_dofs, 2, 60, 1e-8).unwrap();
+    let b = solve_vibration_modes(&k, &m2, &fixed_dofs, 2, 60, 1e-8).unwrap();
+    let ratios: Vec<f64> = b
+        .iter()
+        .zip(a.iter())
+        .map(|(hi, lo)| hi.frequency_hz / lo.frequency_hz)
+        .collect();
+    assert_relative_eq!(ratios[0], 0.01, epsilon = 1e-4);
+    assert_relative_eq!(ratios[1], 0.01, epsilon = 1e-4);
+}
+
+#[test]
+fn custom_inner_solver_matches_jacobi_default() {
+    // The same cantilever through the default Jacobi inner solve and through an equivalent
+    // one handed to the with_inner entry: identical iteration, identical frequencies.
+    let mesh = box_beam(1.0, 0.1, 0.1, 8, 1, 1);
+    let material = ElasticMaterial::new(1.0e7, 0.3);
+    let mut fixed_dofs = Vec::new();
+    for (i, vert) in mesh.vertices.iter().enumerate() {
+        if vert[0] < 1e-6 {
+            fixed_dofs.extend(3 * i..3 * i + 3);
+        }
+    }
+    let k = assemble_elasticity_stiffness_3d(&mesh, &material);
+    let m = assemble_elasticity_mass_3d(&mesh, 1000.0);
+
+    let default = solve_vibration_modes(&k, &m, &fixed_dofs, 3, 60, 1e-8).unwrap();
+
+    let kd = fold_dirichlet(&k, &fixed_dofs, true);
+    let custom = solve_vibration_modes_with_inner(
+        &k,
+        &m,
+        &fixed_dofs,
+        3,
+        60,
+        1e-8,
+        &|b: &[f64], x0: &[f64]| solve_cg(&kd, b, Some(x0), 1e-9, 1000).map(|(w, _, _)| w),
+    )
+    .unwrap();
+
+    for (ref_d, ref_c) in default.iter().zip(&custom) {
+        assert_relative_eq!(ref_c.frequency_hz / ref_d.frequency_hz, 1.0, epsilon = 1e-9);
+    }
 }

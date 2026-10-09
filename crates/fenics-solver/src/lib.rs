@@ -13,7 +13,9 @@ pub mod transient;
 
 pub use cg::{dot, norm2, solve_cg, spmv};
 pub use direct::{solve_direct, sparse_to_dense};
-pub use eigen::{solve_vibration_modes, VibrationMode};
+pub use eigen::{
+    fold_dirichlet, solve_vibration_modes, solve_vibration_modes_with_inner, VibrationMode,
+};
 pub use elasticity_solver::{solve_elasticity_3d, ElasticitySolution};
 pub use heat_solver::{solve_transient_heat_2d, TransientHeatSolution};
 pub use hyperelastic_solver::{solve_hyperelastic_2d, HyperelasticBC, NeoHookeanMaterial};
