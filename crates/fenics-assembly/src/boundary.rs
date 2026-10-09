@@ -30,10 +30,7 @@ where
         // ds = length * ds_ref
         for q in &quad.points {
             let s = q.point[0];
-            let x_q = [
-                (1.0 - s) * v0[0] + s * v1[0],
-                (1.0 - s) * v0[1] + s * v1[1],
-            ];
+            let x_q = [(1.0 - s) * v0[0] + s * v1[0], (1.0 - s) * v0[1] + s * v1[1]];
             let g_val = flux_fn(&x_q);
             let w = q.weight * length;
 

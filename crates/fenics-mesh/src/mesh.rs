@@ -176,7 +176,9 @@ impl SimplicialMesh<3, 4> {
                             ab[0] * ac[1] - ab[1] * ac[0],
                         ];
                         let to_face = [v_a[0] - v_opp[0], v_a[1] - v_opp[1], v_a[2] - v_opp[2]];
-                        let dot = normal[0] * to_face[0] + normal[1] * to_face[1] + normal[2] * to_face[2];
+                        let dot = normal[0] * to_face[0]
+                            + normal[1] * to_face[1]
+                            + normal[2] * to_face[2];
 
                         let oriented_face = if dot >= 0.0 {
                             face
@@ -191,17 +193,19 @@ impl SimplicialMesh<3, 4> {
 
         face_map
             .into_iter()
-            .filter_map(|(_sorted, (count, cell_idx, local_facet_idx, oriented_vertices))| {
-                if count == 1 {
-                    Some(BoundaryFacet {
-                        vertices: oriented_vertices,
-                        cell_idx,
-                        local_facet_idx,
-                    })
-                } else {
-                    None
-                }
-            })
+            .filter_map(
+                |(_sorted, (count, cell_idx, local_facet_idx, oriented_vertices))| {
+                    if count == 1 {
+                        Some(BoundaryFacet {
+                            vertices: oriented_vertices,
+                            cell_idx,
+                            local_facet_idx,
+                        })
+                    } else {
+                        None
+                    }
+                },
+            )
             .collect()
     }
 

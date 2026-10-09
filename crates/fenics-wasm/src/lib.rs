@@ -410,4 +410,3 @@ pub fn solve_transient_heat_2d_wasm(
     serde_wasm_bindgen::to_value(&res)
         .map_err(|e| JsValue::from_str(&format!("Serialization error: {}", e)))
 }
-
