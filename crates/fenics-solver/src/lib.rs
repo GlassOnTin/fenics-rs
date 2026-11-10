@@ -4,6 +4,7 @@ pub mod cg;
 pub mod direct;
 pub mod eigen;
 pub mod elasticity_solver;
+pub mod gpu;
 pub mod heat_solver;
 pub mod hyperelastic_solver;
 pub mod newton;
@@ -17,6 +18,10 @@ pub use eigen::{
     fold_dirichlet, solve_vibration_modes, solve_vibration_modes_with_inner, VibrationMode,
 };
 pub use elasticity_solver::{solve_elasticity_3d, ElasticitySolution};
+pub use gpu::{
+    best_gpu_index, discover_gpus, solve_bsr3_pcg_gpu, solve_cg_gpu_or_cpu, solve_csr_cg_gpu,
+    spmv_bsr3_multi_gpu, GpuBsr3Context, GpuDeviceInfo, GpuSolveResult,
+};
 pub use heat_solver::{solve_transient_heat_2d, TransientHeatSolution};
 pub use hyperelastic_solver::{solve_hyperelastic_2d, HyperelasticBC, NeoHookeanMaterial};
 pub use newton::{NewtonResult, NewtonSolver};
